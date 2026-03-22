@@ -1,9 +1,10 @@
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
+const { encryptString, hmacDeterministic } = require("../utils/crypto");
 
 // Generate JWT token
-const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
+const generateToken = (userId, email) => {
+  return jwt.sign({ id: userId, email: email }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
 
 // Google OAuth strategy setup
@@ -26,61 +27,66 @@ exports.setupGoogleStrategy = (passport) => {
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
+          console.log("🔍 Google OAuth Profile:", {
+            id: profile.id,
+            displayName: profile.displayName,
+            email: profile.emails?.[0]?.value,
+            photo: profile.photos?.[0]?.value
+          });
+
           // Check if user already exists with this Google ID
           let user = await User.findOne({ googleId: profile.id });
 
-          if (user) {
-            // User exists, update their Google info if needed
-            if (!user.googleEmail) {
-              user.googleEmail = profile.emails[0].value;
-              user.googleName = profile.displayName;
-              user.googlePicture = profile.photos[0]?.value;
-              await user.save();
-            }
-            return done(null, user);
-          }
+          
 
           // Check if user exists with the same email but different auth method
-          const existingUser = await User.findOne({ email: profile.emails[0].value });
+          const existingUser = await User.findOne({ emailHash: hmacDeterministic(profile.emails[0].value) });
           
           if (existingUser) {
+            console.log("🔗 Linking Google account to existing user");
             // Link Google account to existing user
             existingUser.googleId = profile.id;
             existingUser.googleEmail = profile.emails[0].value;
             existingUser.googleName = profile.displayName;
             existingUser.googlePicture = profile.photos[0]?.value;
-            existingUser.isVerified = true; // Google users are automatically verified
+            existingUser.isVerified = true; 
+            existingUser.usernameEnc = encryptString(profile.displayName || existingUser.googleName || "");
+            existingUser.emailEnc = encryptString(profile.emails[0].value);
             await existingUser.save();
+            console.log("✅ Google account linked successfully");
             return done(null, existingUser);
           }
 
           // Create new user with Google OAuth
+          console.log("🆕 Creating new Google user");
           const newUser = new User({
-            username: profile.displayName || profile.emails[0].value.split("@")[0],
-            email: profile.emails[0].value,
+            emailHash: hmacDeterministic(profile.emails[0].value),
             googleId: profile.id,
             googleEmail: profile.emails[0].value,
             googleName: profile.displayName,
             googlePicture: profile.photos[0]?.value,
-            isVerified: true, // Google users are automatically verified
+            isVerified: true, 
+            usernameEnc: encryptString(profile.displayName || profile.emails[0].value.split("@")[0]),
+            emailEnc: encryptString(profile.emails[0].value),
           });
 
           await newUser.save();
+          console.log("✅ New Google user created:", newUser.email, "isVerified:", newUser.isVerified);
           return done(null, newUser);
         } catch (error) {
-          console.error("Google OAuth error:", error);
+          console.error("❌ Google OAuth error:", error);
           return done(error, null);
         }
       }
     )
   );
 
-  // Serialize user for session
+
   passport.serializeUser((user, done) => {
     done(null, user._id);
   });
 
-  // Deserialize user from session
+  
   passport.deserializeUser(async (id, done) => {
     try {
       const user = await User.findById(id);
@@ -93,7 +99,7 @@ exports.setupGoogleStrategy = (passport) => {
 
 // Google OAuth routes
 exports.googleAuth = (passport) => {
-  // Check if Google OAuth is configured
+  
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
     return (req, res) => {
       res.redirect(`${process.env.FRONTEND_URL || "http://localhost:3000"}/login?error=google_auth_not_configured`);
@@ -106,7 +112,7 @@ exports.googleAuth = (passport) => {
 };
 
 exports.googleCallback = (passport) => {
-  // Check if Google OAuth is configured
+  
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
     return (req, res) => {
       res.redirect(`${process.env.FRONTEND_URL || "http://localhost:3000"}/login?error=google_auth_not_configured`);
@@ -123,29 +129,41 @@ exports.googleCallbackHandler = async (req, res) => {
     const user = req.user;
     
     if (!user) {
+      console.log("❌ No user found in Google callback");
       return res.redirect(`${process.env.FRONTEND_URL || "http://localhost:3000"}/login?error=google_auth_failed`);
     }
 
-    // Generate JWT token
-    const token = generateToken(user._id);
+    console.log("🎉 Google OAuth successful for user:", {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      isVerified: user.isVerified,
+      googleId: user.googleId,
+      googleName: user.googleName
+    });
 
-    // Set token in HTTP-only cookie
-    res.cookie("token", token, {
+    // Generate JWT token
+    const token = generateToken(user._id, user.email);
+
+    
+    res.cookie(process.env.COOKIE_NAME || "token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
-    // Redirect to frontend with success
+    console.log("✅ JWT token generated and cookie set, redirecting to home");
+    console.log("🔑 Token payload:", { id: user._id, email: user.email });
+    
     res.redirect(`${process.env.FRONTEND_URL || "http://localhost:3000"}/home`);
   } catch (error) {
-    console.error("Google callback handler error:", error);
+    console.error("❌ Google callback handler error:", error);
     res.redirect(`${process.env.FRONTEND_URL || "http://localhost:3000"}/login?error=google_auth_failed`);
   }
 };
 
-// Check if user exists by email (for registration validation)
+
 exports.checkUserExists = async (req, res) => {
   try {
     const { email } = req.body;

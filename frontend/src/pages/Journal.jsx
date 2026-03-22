@@ -10,14 +10,14 @@ export default function Journal() {
   const [splitOpen, setSplitOpen] = useState(false);
   const [splitEntered, setSplitEntered] = useState(false);
   const [entries, setEntries] = useState([]);
-  const [dayIndex, setDayIndex] = useState(0); // 0 = latest day (usually today)
+  const [dayIndex, setDayIndex] = useState(0); 
   const [previewText, setPreviewText] = useState("");
   const [previewMood, setPreviewMood] = useState("joy");
   const [mlResponse, setMlResponse] = useState(null);
   const [mlLoading, setMlLoading] = useState(false);
   const [conversationCount, setConversationCount] = useState(0);
   // Right-side follow-up conversation (chat) state
-  const [supportMessages, setSupportMessages] = useState([]); // {role: 'assistant'|'user', content: string}
+  const [supportMessages, setSupportMessages] = useState([]); 
   const [supportInput, setSupportInput] = useState("");
   const [user, setUser] = useState(null);
   // Breathing timer state
@@ -57,7 +57,7 @@ export default function Journal() {
         const { data } = await getProtectedData();
         if (data?.user) setUser(data.user);
       } catch (e) {
-        // ignore; user not loaded shouldn't block journal
+        
       }
     })();
   }, []);
@@ -121,21 +121,21 @@ export default function Journal() {
     const text = entryText.trim();
     if (!text) return;
     try {
-      // First save the journal entry (this will encrypt it)
+      // First save the journal entry 
       const savedEntry = await createJournal({ text, mood: "joy" }); // Use default mood first
       const { data } = await listJournal();
       setEntries(data.entries || []);
       
       // Now get ML prediction and supportive response using the original text
       setMlLoading(true);
-      let predictedMood = "joy"; // default fallback
+      let predictedMood = "joy"; 
       let supportResult = null;
       try {
         const mlData = await getEmotionSupport({ text, mood: "joy" });
         setMlResponse(mlData.data);
         supportResult = mlData.data;
 
-        // Map ML service emotions to frontend emotions
+        // Map ML service emotions 
         const emotionMap = {
           "joy": "joy",
           "sadness": "sadness",
@@ -181,7 +181,7 @@ export default function Journal() {
       setBreathingPhase("inhale");
       setPhaseRemaining(4);
 
-      // Seed right-side conversation with assistant support summary
+    
       const assistantIntro = [];
       if (supportResult?.support_plan?.support_message) {
         assistantIntro.push(supportResult.support_plan.support_message);
@@ -197,7 +197,7 @@ export default function Journal() {
       // If model suggests breathing, show prompt to user
       const actions = supportResult?.support_plan?.actions;
       if (actions?.suggest_breathing_timer) {
-        const total = parseInt(actions?.recommended_duration || 0, 10) || 60;
+        const total = 60;
         setShowBreathingPrompt(true);
         setRecommendedDuration(total);
       }
@@ -228,7 +228,7 @@ export default function Journal() {
     setSplitOpen(false);
   };
 
-  // Right-side: submit a follow-up message to the support pipeline
+  
   const onSupportSubmit = async (e) => {
     e.preventDefault();
     const text = supportInput.trim();
@@ -244,7 +244,7 @@ export default function Journal() {
       if (plan?.support_message) parts.push(plan.support_message);
       if (Array.isArray(plan?.activities)) parts.push("Suggested activities: " + plan.activities.join(", "));
       setSupportMessages((m) => [...m, { role: "assistant", content: parts.join("\n\n") || "" }]);
-      // Update breathing availability if suggested on follow-up
+      
       const actions = plan?.actions;
       if (actions?.suggest_breathing_timer) {
         const total = parseInt(actions?.recommended_duration || 0, 10) || 0;
@@ -280,7 +280,7 @@ export default function Journal() {
     if (!breathingRunning) return;
     if (breathingRemaining <= 0) {
       setBreathingRunning(false);
-      // Auto message to assistant after completion
+      
       (async () => {
         try {
           const txt = `I completed the breathing exercise for ${breathingTotalSeconds} seconds.`;
@@ -484,11 +484,11 @@ export default function Journal() {
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                             <div>
                               <strong>Would you like to try a guided breathing exercise?</strong>
-                              <div style={{ color: "#4c6a9b" }}>Recommended duration: {recommendedDuration || 60}s</div>
+                              <div style={{ color: "#4c6a9b" }}>Recommended duration: { 60}s</div>
                             </div>
                             <div style={{ display: "flex", gap: 8 }}>
                               <button type="button" className="btn" onClick={() => {
-                                const total = recommendedDuration || 60;
+                                const total =  60;
                                 setBreathingEnabled(true);
                                 setBreathingTotalSeconds(total);
                                 setBreathingRemaining(total);

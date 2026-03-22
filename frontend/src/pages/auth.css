@@ -35,6 +35,10 @@ a:hover{color:var(--text-900)}
   padding:12px 18px; border-radius:var(--r-md); border:1px solid transparent;
   background:transparent; cursor:pointer; transition:transform .12s var(--ease), box-shadow .12s var(--ease);
 }
+
+.btn-google{
+  margin-left: calc(50% - 100px);
+}
 .btn:hover{transform:translateY(-1px)}
 .btn:focus-visible{outline:none; box-shadow:var(--shadow-focus)}
 .btn-primary{background:var(--primary); color:#fff; box-shadow:var(--shadow-2)}
@@ -44,7 +48,7 @@ a:hover{color:var(--text-900)}
   display:flex; align-items:center; justify-content:center; gap:8px;
   box-shadow:var(--shadow-1);
 }
-.btn-google:hover{background:#f9fafb; border-color:#9ca3af}
+.btn-google:hover{background:#010a13; border-color:#9ca3af}
 .btn-lg{padding:14px 22px; border-radius:var(--r-lg)}
 .w-100{width:100%}
 

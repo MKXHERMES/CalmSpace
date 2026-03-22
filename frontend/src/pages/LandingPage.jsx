@@ -49,18 +49,7 @@ export default function LandingPage() {
             <a href="#contact">Contact</a>
           </nav>
           <div className="lp-actions">
-            <div className="theme-picker-mini">
-              {["warm", "calm", "mint", "lavender", "rose", "sunset"].map((themeId) => (
-                <button
-                  key={themeId}
-                  className={`theme-btn-mini ${theme === themeId ? 'active' : ''}`}
-                  onClick={() => setTheme(themeId)}
-                  title={themeId.charAt(0).toUpperCase() + themeId.slice(1)}
-                >
-                  <div className="theme-color-mini" data-theme={themeId}></div>
-                </button>
-              ))}
-            </div>
+            
             <button className="btn btn-ghost" onClick={handleClick}>Log in</button>
             <button className="btn btn-primary" onClick={handlesignup}>Sign up</button>
           </div>

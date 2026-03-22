@@ -7,7 +7,7 @@ import "../components/ProfileDropdown.css";
 import  { useEffect, useState } from "react";
 import "./Home.css";
 
-// theme names and sample data removed as real data is fetched from backend
+
 
 function Greeting({ username }) {
   const hour = new Date().getHours();
@@ -16,7 +16,7 @@ function Greeting({ username }) {
   return <h1 className="greeting">{label}, <span className="brand-accent">{username || "User"}</span> </h1>;
 }
 
-// removed previous line chart; replaced with pie chart below
+
 
 function PieChart({ counts }) {
   const entries = Object.entries(counts || {});
@@ -98,7 +98,7 @@ export default function HomePage() {
         if (data?.moodCounts) setMoodCounts(data.moodCounts);
         if (data?.recentEntries) setRecentEntries(data.recentEntries);
       } catch (e) {
-        // silently ignore for home rendering
+        
       }
     })();
   }, []);
@@ -109,7 +109,7 @@ export default function HomePage() {
         const { data } = await getProtectedData();
         if (data?.user) setUser(data.user);
       } catch (e) {
-        // ignore; user not loaded shouldn't block home
+        
       }
     })();
   }, []);

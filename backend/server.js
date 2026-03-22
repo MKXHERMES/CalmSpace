@@ -11,12 +11,12 @@ const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const journalRoutes = require("./routes/journalRoutes");
 const profileRoutes = require("./routes/profileRoutes");
-// const googleAuthRoutes = require("./routes/googleAuthRoutes"); // Disabled
+const googleAuthRoutes = require("./routes/googleAuthRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// Connect to database (with error handling)
+
 connectDB().catch(err => {
   console.error("Database connection failed:", err.message);
   console.log("Server will continue without database connection for testing");
@@ -25,7 +25,7 @@ connectDB().catch(err => {
 app.use(express.json());
 app.use(cookieParser());
 
-// Session configuration for Passport
+
 app.use(session({
   secret: process.env.SESSION_SECRET || "your-session-secret",
   resave: false,
@@ -36,11 +36,11 @@ app.use(session({
   }
 }));
 
-// Initialize Passport
+
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Enable CORS for frontend (adjust origin as needed)
+
 app.use(cors({
   origin: "http://localhost:3000",
   credentials: true,
@@ -54,15 +54,15 @@ app.use(cors({
 // Handle preflight requests explicitly
 app.options('*', cors());
 
-// Serve static files from uploads directory
+
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use("/api/auth", authRoutes);
-// app.use("/api/auth", googleAuthRoutes); // Disabled
+app.use("/api/auth", googleAuthRoutes);
 app.use("/api/journal", journalRoutes);
 app.use("/api/profile", profileRoutes);
 
-// Proxy request from frontend → backend → ML service
+
 app.post("/api/emotion", async (req, res) => {
   const { text } = req.body;
   try {
@@ -78,7 +78,7 @@ app.post("/api/emotion", async (req, res) => {
   }
 });
 
-// New proxy: text + mood → ML service support pipeline
+
 app.post("/api/emotion/support", async (req, res) => {
   const { text, mood } = req.body || {};
   try {

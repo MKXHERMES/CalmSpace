@@ -1,12 +1,22 @@
 const JournalEntry = require("../models/JournalEntry");
+const { encryptString, decryptString } = require("../utils/crypto");
 
 exports.createEntry = async (req, res) => {
   try {
     const { text, mood } = req.body;
     if (!text || !mood) return res.status(400).json({ message: "Text and mood are required" });
 
-    const entry = await JournalEntry.create({ user: req.user.id, text, mood });
-    return res.status(201).json({ message: "Entry created", entry });
+    const entry = await JournalEntry.create({
+      user: req.user.id,
+      text: encryptString(text),
+      mood: encryptString(mood),
+    });
+    const safe = {
+      ...entry.toObject(),
+      text,
+      mood,
+    };
+    return res.status(201).json({ message: "Entry created", entry: safe });
   } catch (err) {
     console.error("Create entry error:", err);
     return res.status(500).json({ message: "Server error" });
@@ -15,9 +25,14 @@ exports.createEntry = async (req, res) => {
 
 exports.listEntries = async (req, res) => {
   try {
-    const entries = await JournalEntry.find({ user: req.user.id })
-      .sort({ createdAt: -1 });
-    return res.json({ entries });
+    const entries = await JournalEntry.find({ user: req.user.id }).sort({ createdAt: -1 });
+    const decrypted = entries.map((e) => {
+      const obj = e.toObject();
+      obj.text = decryptString(obj.text) || "[Unable to decrypt - encrypted with different keys]";
+      obj.mood = decryptString(obj.mood) || "unknown";
+      return obj;
+    });
+    return res.json({ entries: decrypted });
   } catch (err) {
     console.error("List entries error:", err);
     return res.status(500).json({ message: "Server error" });
@@ -36,11 +51,16 @@ exports.updateEntry = async (req, res) => {
     }
     
     // Update only provided fields
-    if (text !== undefined) entry.text = text;
-    if (mood !== undefined) entry.mood = mood;
+    if (text !== undefined) entry.text = encryptString(text);
+    if (mood !== undefined) entry.mood = encryptString(mood);
     
     await entry.save();
-    return res.json({ message: "Entry updated", entry });
+    const safe = {
+      ...entry.toObject(),
+      text: text !== undefined ? text : (decryptString(entry.text) || "[Unable to decrypt - encrypted with different keys]"),
+      mood: mood !== undefined ? mood : (decryptString(entry.mood) || "unknown"),
+    };
+    return res.json({ message: "Entry updated", entry: safe });
   } catch (err) {
     console.error("Update entry error:", err);
     return res.status(500).json({ message: "Server error" });
@@ -63,7 +83,7 @@ exports.deleteEntry = async (req, res) => {
   }
 };
 
-// Return mood distribution for the last 7 days and latest entries
+
 exports.summary = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -84,12 +104,21 @@ exports.summary = async (req, res) => {
     };
 
     lastWeekEntries.forEach((e) => {
-      if (moodCounts[e.mood] !== undefined) moodCounts[e.mood] += 1;
+      const mood = decryptString(e.mood);
+      if (mood && moodCounts[mood] !== undefined) {
+        moodCounts[mood] += 1;
+      }
     });
 
-    const recentEntries = await JournalEntry.find({ user: userId })
+    const recentEntriesRaw = await JournalEntry.find({ user: userId })
       .sort({ createdAt: -1 })
       .limit(3);
+    const recentEntries = recentEntriesRaw.map((e) => {
+      const obj = e.toObject();
+      obj.text = decryptString(obj.text) || "[Unable to decrypt - encrypted with different keys]";
+      obj.mood = decryptString(obj.mood) || "unknown";
+      return obj;
+    });
 
     return res.json({ moodCounts, recentEntries });
   } catch (err) {

@@ -32,8 +32,8 @@ export const uploadProfileImage = (formData) => API.post("/profile/image", formD
 });
 export const removeProfileImage = () => API.delete("/profile/image");
 
-// Google OAuth operations (disabled)
-// export const checkUserExists = (email) => API.post("/auth/check-user", { email });
-// export const googleSignIn = () => {
-//   window.location.href = "http://localhost:5001/api/auth/google";
-// };
+// Google OAuth operations
+export const checkUserExists = (email) => API.post("/auth/check-user", { email });
+export const googleSignIn = () => {
+  window.location.href = "http://localhost:5001/api/auth/google";
+};

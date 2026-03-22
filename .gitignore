@@ -28,6 +28,7 @@ coverage/
 # ------------------------
 backend/uploads/
 backend/node_modules/
+backend/config/keys/
 
 # ------------------------
 # Python ML service
@@ -44,7 +45,7 @@ ml_service/.ipynb_checkpoints/
 # ------------------------
 # Model files (large)
 # ------------------------
-fine_tuned_emotion_model_revised/*.safetensors
+
 fine_tuned_emotion_model_revised/*.bin
 
 # ------------------------
@@ -58,3 +59,9 @@ fine_tuned_emotion_model_revised/*.bin
 *.sublime-project
 *.sublime-workspace
 pat-eaqd-icw
+
+# ------------------------
+# Sensitive / secret files
+# ------------------------
+GOOGLE_OAUTH_SETUP.md
+backend/utils/crypto.js
